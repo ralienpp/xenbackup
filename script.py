@@ -105,7 +105,7 @@ if __name__ == '__main__':
 
     mount_cmd = "mount -t %s %s %s" % (backup_fs, device, backup_dir)
     logging.info('Mounting backup volume with `%s`', mount_cmd)
-    status = subprocess.check_call(mount_cmd.split())
+    status = subprocess.call(mount_cmd.split())
     logging.info('Result: %s', status)
 
     # wipe old backups
