@@ -6,7 +6,7 @@ import re
 import os
 import ConfigParser
 import datetime
-
+import logging
 
 def parse_vms(vm_list):
     result = []
@@ -22,7 +22,7 @@ def parse_vms(vm_list):
 
 
 def get_vms(vm_list):
-    return {
+    result = {
         'all': commands.getoutput('xe vm-list is-control-domain=false'
                                   ' is-a-snapshot=false'),
         'running': commands.getoutput('xe vm-list power-state=running'
@@ -30,9 +30,12 @@ def get_vms(vm_list):
         'list': backup_list,
         'none': None
     }.get(vm_list, None)
+    logging.info('VMs that will be backed up: %s', result)
+    return result
 
 
 def backup_vm(uuid, filename, timestamp):
+    logging.info('Backing up %s to %s', uuid, filename)
     snapshot_uuid = commands.getoutput(
         'xe vm-snapshot uuid=' + uuid + ' new-name-label=' + timestamp)
     commands.getoutput(
@@ -44,6 +47,7 @@ def backup_vm(uuid, filename, timestamp):
 
 
 def wipe_old_backups(days_old):
+    logging.info('Wiping backups older than %i days', days_old)
     os.chdir(backup_dir)
     backup_all = glob.glob('*.xva')
 
@@ -55,11 +59,15 @@ def wipe_old_backups(days_old):
         if abs((datetime.datetime.now() - time_obj).days) > days_old:
             try:
                 os.remove(backup_name)
-            except OSError:
-                pass
+                logging.info('Removed `%s`', backup_name)
+            except OSError, err:
+                logging.exception('Could not remove `%s`', backup_name)
 
 
 if __name__ == '__main__':
+    logging.basicConfig(level=logging.DEBUG,
+                    format='%(asctime)-15s %(levelname)5s - %(message)s')
+
     config = ConfigParser.RawConfigParser()
     config.read(r'vm_backup.cfg')
 
@@ -70,13 +78,14 @@ if __name__ == '__main__':
     backup_vms = config.get('Which_VMs_to_backup', 'backup_vms')
     backup_list = config.get('Backup_list', 'backup_list').split(',')
 
-    commands.getoutput("mount -t " + device + " " + backup_dir)
-    
+    mount_result = commands.getoutput("mount -t " + device + " " + backup_dir)
+    logging.info('Mount volume result %s', mount_result)
+
     wipe_old_backups(int(days_old))
 
     for (uuid, name) in parse_vms(get_vms(backup_vms)):
          timestamp = time.strftime("%Y%m%d-%H%M", time.gmtime())
-         print timestamp, uuid, name
+         logging.info('%s %s %s', timestamp, uuid, name)
          filename = "\"" + backup_dir + "/" + timestamp + " " + name + ".xva\""
          backup_vm(uuid, filename, timestamp)
 
