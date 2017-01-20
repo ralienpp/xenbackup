@@ -69,7 +69,7 @@ def backup_vm(uuid, filename, timestamp):
     status = subprocess.call(cmd.split())
     logging.debug('Setting template-param to False, status: %s', status)
 
-    cmd = 'xe vm-export vm=%s filename=%s)' % (snapshot_uuid, filename)
+    cmd = 'xe vm-export vm=%s filename=%s' % (snapshot_uuid, filename)
     logging.debug('Running `%s`', cmd)
     status = subprocess.call(cmd.split())
     logging.debug('Exorting VM status: %s', status)
