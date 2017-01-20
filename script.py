@@ -7,6 +7,7 @@ import os
 import ConfigParser
 import datetime
 import logging
+import subprocess
 
 def parse_vms(raw_output, uuid_filter=None):
     '''Take the raw output of get_vms and transform it into a
@@ -103,9 +104,8 @@ if __name__ == '__main__':
 
     mount_cmd = "mount -t " + device + " " + backup_dir
     logging.info('Mounting backup volume with `%s`', mount_cmd)
-    status, output = commands.getstatusoutput(mount_cmd)
+    status = subprocess.check_call(mount_cmd.split())
     logging.info('Result: %s', status)
-    logging.debug('Raw mount output `%s`', output)
 
     # wipe old backups
     wipe_old_backups(int(days_old))
