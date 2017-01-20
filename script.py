@@ -59,7 +59,6 @@ def backup_vm(uuid, filename, timestamp):
     :param timestamp:   str, TODO get rid of this one, timestamp
                         to be used as a part of the label of the
                         backup machine'''
-    filename = filename.strip()  # if it has spaces at edges
     logging.info('Backing up `%s` to `%s`', uuid, filename)
     snapshot_uuid = commands.getoutput(
         'xe vm-snapshot uuid=' + uuid + ' new-name-label=' + timestamp)
@@ -128,14 +127,14 @@ if __name__ == '__main__':
         for (uuid, name) in parse_vms(get_vms('all'), backup_list):
             timestamp = time.strftime("%Y%m%d-%H%M", time.gmtime())
             logging.info('Preparing %s %s %s', timestamp, uuid, name)
-            filename = "\" " + backup_dir + "/" + timestamp + " " + name + ".xva\""
+            filename = '"%s/%s-%s.xva"' % (backup_dir, timestamp, name)
             backup_vm(uuid, filename, timestamp)
     else:
         # operate as usual
         for (uuid, name) in parse_vms(get_vms(backup_mode)):
              timestamp = time.strftime("%Y%m%d-%H%M", time.gmtime())
              logging.info('Preparing %s %s %s', timestamp, uuid, name)
-             filename = "\" " + backup_dir + "/" + timestamp + " " + name + ".xva\""
+            filename = '"%s/%s-%s.xva"' % (backup_dir, timestamp, name)
              backup_vm(uuid, filename, timestamp)
 
     if False:
