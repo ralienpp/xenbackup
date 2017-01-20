@@ -62,12 +62,20 @@ def backup_vm(uuid, filename, timestamp):
     logging.info('Backing up %s to %s', uuid, filename)
     snapshot_uuid = commands.getoutput(
         'xe vm-snapshot uuid=' + uuid + ' new-name-label=' + timestamp)
-    commands.getoutput(
-        'xe template-param-set is-a-template=false '
-        'ha-always-run=false uuid=' + snapshot_uuid)
-    commands.getoutput(
-        'xe vm-export vm=' + snapshot_uuid + ' filename=' + filename)
-    commands.getoutput('xe vm-uninstall uuid=' + snapshot_uuid + ' force=true')
+    logging.debug('Produced snapshot %s', snapshot_uuid)
+
+    cmd = 'xe template-param-set is-a-template=false '
+          'ha-always-run=false uuid=' + snapshot_uuid
+    status = subprocess.call(cmd.split())
+    logging.debug('Setting template-param to False, status: %s', status)
+
+    cmd = 'xe vm-export vm=%s filename=%s)' % (snapshot_uuid, filename)
+    status = subprocess.call(cmd.split())
+    logging.debug('Exorting VM status: %s', status)
+
+    cmd = 'xe vm-uninstall uuid=%s force=true' % (snapshot_uuid)
+    status = subprocess.call(cmd.split())
+    logging.debug('Export complete, status: %s', status)
 
 
 def wipe_old_backups(days_old):
