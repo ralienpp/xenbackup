@@ -22,6 +22,12 @@ def parse_vms(vm_list):
 
 
 def get_vms(vm_list):
+    '''Returns a list of VMs that will be backed up, depending on
+    the given criteria.
+    :param vm_list: str, possible options are:
+                    - all - everything
+                    - running - only running machines
+                    - list - a list of predefined machines'''
     result = {
         'all': commands.getoutput('xe vm-list is-control-domain=false'
                                   ' is-a-snapshot=false'),
@@ -78,15 +84,15 @@ if __name__ == '__main__':
     backup_vms = config.get('Which_VMs_to_backup', 'backup_vms')
     backup_list = config.get('Backup_list', 'backup_list').split(',')
 
-    mount_result = commands.getoutput("mount -t " + device + " " + backup_dir)
-    logging.info('Mount volume result %s', mount_result)
+    logging.info('Mounting backup volume')
+    commands.getoutput("mount -t " + device + " " + backup_dir)
 
     wipe_old_backups(int(days_old))
 
     for (uuid, name) in parse_vms(get_vms(backup_vms)):
          timestamp = time.strftime("%Y%m%d-%H%M", time.gmtime())
          logging.info('Preparing %s %s %s', timestamp, uuid, name)
-         filename = "\"" + backup_dir + "/" + timestamp + " " + name + ".xva\""
+         filename = "\" " + backup_dir + "/" + timestamp + " " + name + ".xva\""
          backup_vm(uuid, filename, timestamp)
 
     commands.getoutput("umount -f -l " + backup_dir)
