@@ -26,7 +26,7 @@ def parse_vms(raw_output, uuid_filter=None):
     if uuid_filter:
         # if a filter was given, delete all the VMs that are not
         # explicitly mentioned in the filter list 
-        for uuid, name in machines.keys():
+        for uuid in machines.keys():
             if uuid not in uuid_filter:
                 del machines[uuid]
 
