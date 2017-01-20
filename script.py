@@ -59,7 +59,7 @@ def backup_vm(uuid, filename, timestamp):
     :param timestamp:   str, TODO get rid of this one, timestamp
                         to be used as a part of the label of the
                         backup machine'''
-    logging.info('Backing up %s to %s', uuid, filename)
+    logging.info('Backing up `%s` to `%s`', uuid, filename)
     snapshot_uuid = commands.getoutput(
         'xe vm-snapshot uuid=' + uuid + ' new-name-label=' + timestamp)
     logging.debug('Produced snapshot %s', snapshot_uuid)
@@ -137,6 +137,8 @@ if __name__ == '__main__':
              filename = "\" " + backup_dir + "/" + timestamp + " " + name + ".xva\""
              backup_vm(uuid, filename, timestamp)
 
-    logging.info('Unmounting `%s`', backup_dir)
-    commands.getoutput("umount -f -l " + backup_dir)
+    if False:
+        # unmounting is not needed at the moment
+        logging.info('Unmounting `%s`', backup_dir)
+        commands.getoutput("umount -f -l " + backup_dir)
     logging.info('Finish')
