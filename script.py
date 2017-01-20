@@ -41,31 +41,23 @@ def get_vms(criteria):
     tools that list VMs by given criteria.
     :param criteria: str, possible options are:
                     - all - everything
-                    - running - only running machines
-                    - list - a list of predefined machines'''
-    # if criteria == 'all':
-    #     result = commands.getoutput('xe vm-list is-control-domain=false'
-    #                               ' is-a-snapshot=false')
-    # elif criteria == 'running':
-    #     result = commands.getoutput('xe vm-list power-state=running'
-    #                                   ' is-control-domain=false')
-    # elif criteria == 'list':
-    #     # get them all, then filter the output by taking only the
-    #     # ones you need
-    #     result = commands.getoutput('xe vm-list is-control-domain=false'
-    #                               ' is-a-snapshot=false')
+                    - running - only running machines'''
     result = {
         'all': commands.getoutput('xe vm-list is-control-domain=false'
                                   ' is-a-snapshot=false'),
         'running': commands.getoutput('xe vm-list power-state=running'
                                       ' is-control-domain=false'),
-        'list': backup_list,
-        'none': None
     }.get(criteria, None)
     return result
 
 
 def backup_vm(uuid, filename, timestamp):
+    '''Backup VM to a file
+    :param uuid:    str, identifier of the machine
+    :param filename:    str, full path to file where to back up
+    :param timestamp:   str, TODO get rid of this one, timestamp
+                        to be used as a part of the label of the
+                        backup machine'''
     logging.info('Backing up %s to %s', uuid, filename)
     snapshot_uuid = commands.getoutput(
         'xe vm-snapshot uuid=' + uuid + ' new-name-label=' + timestamp)
@@ -109,9 +101,13 @@ if __name__ == '__main__':
     backup_mode = config.get('Backup', 'mode')
     backup_list = config.get('Backup_list', 'backup_list').split(',')
 
-    logging.info('Mounting backup volume')
-    commands.getoutput("mount -t " + device + " " + backup_dir)
+    mount_cmd = "mount -t " + device + " " + backup_dir
+    logging.info('Mounting backup volume with `%s`', mount_cmd)
+    status, output = commands.getstatusoutput(mount_cmd)
+    logging.info('Result: %s', status)
+    logging.debug('Raw mount output `%s`', output)
 
+    # wipe old backups
     wipe_old_backups(int(days_old))
 
 
@@ -132,3 +128,4 @@ if __name__ == '__main__':
 
     logging.info('Unmounting `%s`', backup_dir)
     commands.getoutput("umount -f -l " + backup_dir)
+    logging.info('Finish')
