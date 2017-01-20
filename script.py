@@ -130,4 +130,5 @@ if __name__ == '__main__':
              filename = "\" " + backup_dir + "/" + timestamp + " " + name + ".xva\""
              backup_vm(uuid, filename, timestamp)
 
+    logging.info('Unmounting `%s`', backup_dir)
     commands.getoutput("umount -f -l " + backup_dir)
