@@ -8,18 +8,31 @@ import ConfigParser
 import datetime
 import logging
 
-def parse_vms(vm_list):
+def parse_vms(raw_output, uuid_filter=None):
     '''Take the raw output of get_vms and transform it into a
-    list of (uuid, name) tuples for further processing.'''
-    result = []
+    list of (uuid, name) tuples for further processing.
+    :param uuid_filter: list of strings, which represents UUIDs
+                        that must be included in the result,
+                        omitting everything else'''
+    machines = {}
 
-    if vm_list:
-        for vm in vm_list.split("\n\n\n"):
+    if raw_output:
+        for vm in raw_output.split("\n\n\n"):
             lines = vm.splitlines()
             uuid = lines[0].split(":")[1][1:]
             name = lines[1].split(":")[1][1:]
-            result += [(uuid, name)]
+            machines[uuid] = name
 
+    if uuid_filter:
+        # if a filter was given, delete all the VMs that are not
+        # explicitly mentioned in the filter list 
+        for uuid, name in machines.keys():
+            if uuid not in uuid_filter:
+                del machines[uuid]
+
+    # transform it into a list of tuples, as the rest of the
+    # program expects
+    result = [(uuid, name) for uuid, name in machines.iteritems()]
     return result
 
 
@@ -49,7 +62,6 @@ def get_vms(criteria):
         'list': backup_list,
         'none': None
     }.get(criteria, None)
-    logging.info('VMs that will be backed up: %s', result)
     return result
 
 
@@ -91,7 +103,7 @@ if __name__ == '__main__':
     config.read(r'vm_backup.cfg')
 
     device = config.get('Backup', 'device')
-    days_old = config.get('Wipe_old_backups', 'days')
+    days_old = config.get('Backup', 'wipe_days')
     backup_dir = config.get('Backup', 'directory')
     backup_ext = config.get('Backup', 'extension')
     backup_mode = config.get('Backup', 'mode')
@@ -103,11 +115,19 @@ if __name__ == '__main__':
     wipe_old_backups(int(days_old))
 
 
-
-    for (uuid, name) in parse_vms(get_vms(backup_mode)):
-         timestamp = time.strftime("%Y%m%d-%H%M", time.gmtime())
-         logging.info('Preparing %s %s %s', timestamp, uuid, name)
-         filename = "\" " + backup_dir + "/" + timestamp + " " + name + ".xva\""
-         backup_vm(uuid, filename, timestamp)
+    if backup_mode == 'list':
+        logging.info('Backup predefined list of VMs')
+        for (uuid, name) in parse_vms(get_vms('all'), backup_list):
+            timestamp = time.strftime("%Y%m%d-%H%M", time.gmtime())
+            logging.info('Preparing %s %s %s', timestamp, uuid, name)
+            filename = "\" " + backup_dir + "/" + timestamp + " " + name + ".xva\""
+            backup_vm(uuid, filename, timestamp)
+    else:
+        # operate as usual
+        for (uuid, name) in parse_vms(get_vms(backup_mode)):
+             timestamp = time.strftime("%Y%m%d-%H%M", time.gmtime())
+             logging.info('Preparing %s %s %s', timestamp, uuid, name)
+             filename = "\" " + backup_dir + "/" + timestamp + " " + name + ".xva\""
+             backup_vm(uuid, filename, timestamp)
 
     commands.getoutput("umount -f -l " + backup_dir)
