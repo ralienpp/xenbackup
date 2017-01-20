@@ -85,7 +85,7 @@ if __name__ == '__main__':
 
     for (uuid, name) in parse_vms(get_vms(backup_vms)):
          timestamp = time.strftime("%Y%m%d-%H%M", time.gmtime())
-         logging.info('%s %s %s', timestamp, uuid, name)
+         logging.info('Preparing %s %s %s', timestamp, uuid, name)
          filename = "\"" + backup_dir + "/" + timestamp + " " + name + ".xva\""
          backup_vm(uuid, filename, timestamp)
 
