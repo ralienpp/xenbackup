@@ -59,6 +59,7 @@ def backup_vm(uuid, filename, timestamp):
     :param timestamp:   str, TODO get rid of this one, timestamp
                         to be used as a part of the label of the
                         backup machine'''
+    filename = filename.strip()  # if it has spaces at edges
     logging.info('Backing up `%s` to `%s`', uuid, filename)
     snapshot_uuid = commands.getoutput(
         'xe vm-snapshot uuid=' + uuid + ' new-name-label=' + timestamp)
