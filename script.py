@@ -1,0 +1,83 @@
+#!/usr/bin/python
+import commands
+import time
+import glob
+import re
+import os
+import ConfigParser
+import datetime
+
+
+def parse_vms(vm_list):
+    result = []
+
+    if vm_list:
+        for vm in vm_list.split("\n\n\n"):
+            lines = vm.splitlines()
+            uuid = lines[0].split(":")[1][1:]
+            name = lines[1].split(":")[1][1:]
+            result += [(uuid, name)]
+
+    return result
+
+
+def get_vms(vm_list):
+    return {
+        'all': commands.getoutput('xe vm-list is-control-domain=false'
+                                  ' is-a-snapshot=false'),
+        'running': commands.getoutput('xe vm-list power-state=running'
+                                      ' is-control-domain=false'),
+        'list': backup_list,
+        'none': None
+    }.get(vm_list, None)
+
+
+def backup_vm(uuid, filename, timestamp):
+    snapshot_uuid = commands.getoutput(
+        'xe vm-snapshot uuid=' + uuid + ' new-name-label=' + timestamp)
+    commands.getoutput(
+        'xe template-param-set is-a-template=false '
+        'ha-always-run=false uuid=' + snapshot_uuid)
+    commands.getoutput(
+        'xe vm-export vm=' + snapshot_uuid + ' filename=' + filename)
+    commands.getoutput('xe vm-uninstall uuid=' + snapshot_uuid + ' force=true')
+
+
+def wipe_old_backups(days_old):
+    os.chdir(backup_dir)
+    backup_all = glob.glob('*.xva')
+
+    date_pattern = re.compile('(\d*-\d*).*')
+    for backup_name in backup_all:
+        backup_date = date_pattern.match(backup_name)
+        time_obj = datetime.datetime(*(time.strptime(backup_date.group(1), "%Y%m%d-%H%M")[0:5]))
+
+        if abs((datetime.datetime.now() - time_obj).days) > days_old:
+            try:
+                os.remove(backup_name)
+            except OSError:
+                pass
+
+
+if __name__ == '__main__':
+    config = ConfigParser.RawConfigParser()
+    config.read(r'vm_backup.cfg')
+
+    device = config.get('Device', 'dev')
+    days_old = config.get('Wipe_old_backups', 'days')
+    backup_dir = config.get('Backup_directory', 'backup_dir')
+    backup_ext = config.get('Backup_extension', 'backup_ext')
+    backup_vms = config.get('Which_VMs_to_backup', 'backup_vms')
+    backup_list = config.get('Backup_list', 'backup_list').split(',')
+
+    commands.getoutput("mount -t " + device + " " + backup_dir)
+    
+    wipe_old_backups(int(days_old))
+
+    for (uuid, name) in parse_vms(get_vms(backup_vms)):
+         timestamp = time.strftime("%Y%m%d-%H%M", time.gmtime())
+         print timestamp, uuid, name
+         filename = "\"" + backup_dir + "/" + timestamp + " " + name + ".xva\""
+         backup_vm(uuid, filename, timestamp)
+
+    commands.getoutput("umount -f -l " + backup_dir)
