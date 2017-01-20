@@ -64,8 +64,7 @@ def backup_vm(uuid, filename, timestamp):
         'xe vm-snapshot uuid=' + uuid + ' new-name-label=' + timestamp)
     logging.debug('Produced snapshot %s', snapshot_uuid)
 
-    cmd = 'xe template-param-set is-a-template=false '
-          'ha-always-run=false uuid=' + snapshot_uuid
+    cmd = 'xe template-param-set is-a-template=false ha-always-run=false uuid=' + snapshot_uuid
     status = subprocess.call(cmd.split())
     logging.debug('Setting template-param to False, status: %s', status)
 
