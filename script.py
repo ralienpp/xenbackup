@@ -100,9 +100,10 @@ if __name__ == '__main__':
     backup_dir = config.get('Backup', 'directory')
     backup_ext = config.get('Backup', 'extension')
     backup_mode = config.get('Backup', 'mode')
+    backup_fs = config.get('Backup', 'filesys')
     backup_list = config.get('Backup_list', 'backup_list').split(',')
 
-    mount_cmd = "mount -t " + device + " " + backup_dir
+    mount_cmd = "mount -t %s %s %s" % (backup_fs, device, backup_dir)
     logging.info('Mounting backup volume with `%s`', mount_cmd)
     status = subprocess.check_call(mount_cmd.split())
     logging.info('Result: %s', status)
