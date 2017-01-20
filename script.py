@@ -9,6 +9,8 @@ import datetime
 import logging
 
 def parse_vms(vm_list):
+    '''Take the raw output of get_vms and transform it into a
+    list of (uuid, name) tuples for further processing.'''
     result = []
 
     if vm_list:
@@ -21,13 +23,24 @@ def parse_vms(vm_list):
     return result
 
 
-def get_vms(vm_list):
-    '''Returns a list of VMs that will be backed up, depending on
-    the given criteria.
-    :param vm_list: str, possible options are:
+def get_vms(criteria):
+    '''Returns a raw string representing the output of Xen's
+    tools that list VMs by given criteria.
+    :param criteria: str, possible options are:
                     - all - everything
                     - running - only running machines
                     - list - a list of predefined machines'''
+    # if criteria == 'all':
+    #     result = commands.getoutput('xe vm-list is-control-domain=false'
+    #                               ' is-a-snapshot=false')
+    # elif criteria == 'running':
+    #     result = commands.getoutput('xe vm-list power-state=running'
+    #                                   ' is-control-domain=false')
+    # elif criteria == 'list':
+    #     # get them all, then filter the output by taking only the
+    #     # ones you need
+    #     result = commands.getoutput('xe vm-list is-control-domain=false'
+    #                               ' is-a-snapshot=false')
     result = {
         'all': commands.getoutput('xe vm-list is-control-domain=false'
                                   ' is-a-snapshot=false'),
@@ -35,7 +48,7 @@ def get_vms(vm_list):
                                       ' is-control-domain=false'),
         'list': backup_list,
         'none': None
-    }.get(vm_list, None)
+    }.get(criteria, None)
     logging.info('VMs that will be backed up: %s', result)
     return result
 
@@ -77,11 +90,11 @@ if __name__ == '__main__':
     config = ConfigParser.RawConfigParser()
     config.read(r'vm_backup.cfg')
 
-    device = config.get('Device', 'dev')
+    device = config.get('Backup', 'device')
     days_old = config.get('Wipe_old_backups', 'days')
-    backup_dir = config.get('Backup_directory', 'backup_dir')
-    backup_ext = config.get('Backup_extension', 'backup_ext')
-    backup_vms = config.get('Which_VMs_to_backup', 'backup_vms')
+    backup_dir = config.get('Backup', 'directory')
+    backup_ext = config.get('Backup', 'extension')
+    backup_mode = config.get('Backup', 'mode')
     backup_list = config.get('Backup_list', 'backup_list').split(',')
 
     logging.info('Mounting backup volume')
@@ -89,7 +102,9 @@ if __name__ == '__main__':
 
     wipe_old_backups(int(days_old))
 
-    for (uuid, name) in parse_vms(get_vms(backup_vms)):
+
+
+    for (uuid, name) in parse_vms(get_vms(backup_mode)):
          timestamp = time.strftime("%Y%m%d-%H%M", time.gmtime())
          logging.info('Preparing %s %s %s', timestamp, uuid, name)
          filename = "\" " + backup_dir + "/" + timestamp + " " + name + ".xva\""
