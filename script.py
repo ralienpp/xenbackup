@@ -125,14 +125,14 @@ if __name__ == '__main__':
     if backup_mode == 'list':
         logging.info('Backup predefined list of VMs')
         for (uuid, name) in parse_vms(get_vms('all'), backup_list):
-            timestamp = time.strftime("%Y%m%d-%H%M", time.gmtime())
+            timestamp = time.strftime("%Y%m%d-%H%M", time.localtime())
             logging.info('Preparing %s %s %s', timestamp, uuid, name)
             filename = '%s/%s-%s.xva' % (backup_dir, timestamp, name)
             backup_vm(uuid, filename, timestamp)
     else:
         # operate as usual
         for (uuid, name) in parse_vms(get_vms(backup_mode)):
-             timestamp = time.strftime("%Y%m%d-%H%M", time.gmtime())
+             timestamp = time.strftime("%Y%m%d-%H%M", time.localtime())
              logging.info('Preparing %s %s %s', timestamp, uuid, name)
              filename = '%s/%s-%s.xva' % (backup_dir, timestamp, name)
              backup_vm(uuid, filename, timestamp)
